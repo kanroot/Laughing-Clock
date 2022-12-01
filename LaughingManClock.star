@@ -2,12 +2,13 @@ load("render.star", "render")
 load("time.star", "time")
 load("encoding/base64.star", "base64")
 load("animation.star", "animation")
+load("math.star", "math")
 
 FRAME_WIDTH = 64
 FRAME_HEIGHT = 32
 
-IMAGE_WIDTH = 15
-IMAGE_HEIGHT = 9
+IMAGE_WIDTH = 21
+IMAGE_HEIGHT = 16
 
 
 COLORS = [
@@ -30,14 +31,10 @@ iVBORw0KGgoAAAANSUhEUgAAA/QAAAMMCAYAAAD95OwWAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAAGXRF
 """
 
 
-TINY_WHITE = """
-iVBORw0KGgoAAAANSUhEUgAAABIAAAAQCAYAAAAbBi9cAAAACXBIWXMAAAB/AAAAfwG4tsyJAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAEV0RVh0VGl0bGUATGF1aGdpbmcgTWFuIExvZ28gZnJvbSBHaG9zdCBJbiBUaGUgU2hlbGwgLSBTdGFuZCBBbG9uZSBDb21wbGV4BD7f5gAAABV0RVh0QXV0aG9yAFBhdWwgTmljaG9sc29ukaK6UgAAAU90RVh0RGVzY3JpcHRpb24ASSAoV2VpcmQgQ29uc3RydWN0b3IpIHRyYWNlZCB0aGUgU1ZHIGJhY2sgaW4gMjAwNiBkaXJlY3RseSBmcm9tIHRoZSBBbmltZS4gSXQgd2FzIGEgbG9uZyB0aW1lIG9ubGluZSBvbiBvbmUgb2YgYSBmcmllbmRzIHdlYnNpdGUuIEkgZGVjaWRlZCB0byB1cGxvYWQgaXQgdG8gR2l0aHViIDIwMTguCgpUaGUgcmlnaHRzIG9mIHRoZSBvcmlnaW5hbCBsb2dvIGFuZCBpdCdzIGNvcHlyaWdodHMgYmVsb25nIHRvIHRoZSBvcmlnaW5hbCBjcmVhdG9yIGFuZCBhbmltZSBzdHVkaW8uIEhvd2V2ZXIsIHRoZXJlIGFyZSBsb3RzIG9mIHBlb3BsZSB3aG8gZG9uJ3QgY2FyZS4uLi6mXH5nAAAAGHRFWHRDcmVhdGlvbiBUaW1lADIwMDYtMDctMDdr3lyuAAAAY3RFWHRDb3B5cmlnaHQAQ0MgQXR0cmlidXRpb24tTm9uQ29tbWVyY2lhbC1TaGFyZUFsaWtlIGh0dHA6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC9D0yJcAAAB/ElEQVQ4jX2TT0gUUBCHv+euyqqB0SZ2y0MYQh4SIgypW4FUlygKgjwUnmLr0KHDJiTUIaEkiSQKAi/VwYuwl6CiCCz6A+khNAJDqEMhZQTWfl1ma5GtgQcz85v5zZs38xKrRO0EjgA54Ge464AETKWUHq3OWU1Qr55TT6st4cuqudAz6mF1VM3/j2RM3Rx2t3pJfarOqxfUbYGtVcfVDbWIhtTOqHpFXVJH1ANqv3pGnVNvqQ1qi3pdrasm6VJPhj6mvqxVLdq8od5Vk7pdHagOOK82BbBU88p/Y5P6UO0P+3IFywKNKaXvwf4DuK3+cyhAHhhXZ4EOdSMwnAV+RcB74BTwCegCvgILga0DOoDnxWJx98zMzB6gPZPJrBQKhfne3t47lf0A2Ad8A5qBxdC/xFkB3gD5Uqn0MZfLNS0vLze0tbU1l8tlALPRHsAssBUoAG+DoFoywI7p6elBoBGYA3qALcBB1GG1Wd2lLqqD6oLaU/XI69WpmNikeiz8o5WYOmACGEwpPQDuA/uBi0BJfaU+ieofgHdAawykD3hRIUrBPATci4RxoA8Yi4dviILHgc/AIUBgBDiRUir/aT6W7ZraHfZO9ab6TH2tTqh7Y4/ygbVTS4KsqJ5VW2vg9eqAerXWp001EjYBR4E10UI5WisDkymlx7Uu8hu2eZhLNIm8bAAAAABJRU5ErkJggg==
-"""
-
 
 
 IMAGE_TRANSPARENT = """
-iVBORw0KGgoAAAANSUhEUgAAABIAAAAQCAYAAAAbBi9cAAAACXBIWXMAAAFZAAABWQENKMgFAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAEV0RVh0VGl0bGUATGF1aGdpbmcgTWFuIExvZ28gZnJvbSBHaG9zdCBJbiBUaGUgU2hlbGwgLSBTdGFuZCBBbG9uZSBDb21wbGV4BD7f5gAAABV0RVh0QXV0aG9yAFBhdWwgTmljaG9sc29ukaK6UgAAAU90RVh0RGVzY3JpcHRpb24ASSAoV2VpcmQgQ29uc3RydWN0b3IpIHRyYWNlZCB0aGUgU1ZHIGJhY2sgaW4gMjAwNiBkaXJlY3RseSBmcm9tIHRoZSBBbmltZS4gSXQgd2FzIGEgbG9uZyB0aW1lIG9ubGluZSBvbiBvbmUgb2YgYSBmcmllbmRzIHdlYnNpdGUuIEkgZGVjaWRlZCB0byB1cGxvYWQgaXQgdG8gR2l0aHViIDIwMTguCgpUaGUgcmlnaHRzIG9mIHRoZSBvcmlnaW5hbCBsb2dvIGFuZCBpdCdzIGNvcHlyaWdodHMgYmVsb25nIHRvIHRoZSBvcmlnaW5hbCBjcmVhdG9yIGFuZCBhbmltZSBzdHVkaW8uIEhvd2V2ZXIsIHRoZXJlIGFyZSBsb3RzIG9mIHBlb3BsZSB3aG8gZG9uJ3QgY2FyZS4uLi6mXH5nAAAAGHRFWHRDcmVhdGlvbiBUaW1lADIwMDYtMDctMDdr3lyuAAAAY3RFWHRDb3B5cmlnaHQAQ0MgQXR0cmlidXRpb24tTm9uQ29tbWVyY2lhbC1TaGFyZUFsaWtlIGh0dHA6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC9D0yJcAAAAxklEQVQ4jc3SPUrEQBjG8d8sitVeYvEEViIIXsBiiz2ACHsAS0/hMcRK24CIN1hSJ9W2a5PGLdRYZIQYYvbDFHngZT543v+8M/MGlP6vq9ATqOgLJGDeB2h4CviK47Yq2/wjHGKC+w2AJxxH/xkWTUOGV1ziOZ7YjBQXSJDjAed4q3l+JWR/gHJ8NvbesfxZh3itwejoALM9k1+wivMpfGh/l654VP04VSukcI31DpAE41plN6peBCeqvugCFLitVQKnsYi7b8ZWUrUkNGHKAAAAAElFTkSuQmCC
+iVBORw0KGgoAAAANSUhEUgAAABUAAAAQCAYAAAD52jQlAAAACXBIWXMAAABOAAAATgGxzR8zAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAY1JREFUOI2N1E+ITmEUBvDfO77xXyhZYCmTkiQWLIYdir1iNko2FCWFkCZlFhZkmsZQkt2UjRLyp6yUYoNZTOkrhbKgjCJ8r8U9o6/p3uueOvV2zuk5z3nO6YU8w5/jINagF3OxEWfwsaS+zP89pjCAhFU4imFcwSEsxQKMNgX9ji2Yg8v4UVL4Faei6WAT0AOYh4cNWIyhB/frQF817N7tA1iLTlm+hesB+htDmtmSnPNESuk4lkdsFjZhe8JuvG0IVmednHM7pTQEp/EsqL/DOdybMVIHN3ARX1TLchIrejCCpxG8E8w/4U0Xi8eKk+rHeAXTn2hjEWzAvpruVb4556zbFXd8t4UdijOZQh8+Y2EFm29YFxO9TCndxMrI9WJ9TGQyAoO4HYCPSpiNY77iPvdja80UMk6gpVjQNSzGTpxXLG4blgXwVczGi/+B/sKeAL6A94oFHsGxkKeNw1Fzq07vNI2MPziLSyHBLqyO/Gs8CL3GYg+V1g06be3Q9gk+hN59ilPbq/gKa+0v6nbO8HNs7SMAAAAASUVORK5CYII=
 """
 
 
@@ -54,7 +51,7 @@ def main():
                     main_align="space_between",
                     children=[
                         get_time(now),
-                        laughing(),
+                        laughing_bounce(),
                     ],
                 ),
             ],
@@ -97,18 +94,63 @@ def get_time(now):
 
 
 def laughing_bounce():
-   return animation.Transformation(
-        child=render.Image(src=base64.decode(TINY_WHITE), height=16),
-        duration=60,
-        direction="alternate",
-        fill_mode="forwards",
-        keyframes=[
-            animation.Keyframe(
-                percentage=0.0,
-                transforms=[animation.Rotate(-360)],
-                curve="ease_in_out",
-            )
-        ],
+    delay = 100 * time.millisecond
+    frames_per_second = time.second // delay
+    now = time.now().unix_nano // (1000 * 1000 * 1000)
+    frames_since_epoch = int(now * frames_per_second)
+    index = int(frames_since_epoch % NUM_STATES)
+
+    app_cycle_speed = 30 * time.second
+    num_frames = math.ceil(app_cycle_speed // delay)
+    frames = [
+        get_frame(get_state(i))
+        for i in range(index, index + num_frames)
+    ]
+    return render.Animation(frames)
+
+
+def get_state(index):
+    num_x_hits = index // NUM_X_POSITIONS
+    vel_x = num_x_hits % 2 == 0 and 1 or -1
+
+    num_y_hits = index // NUM_Y_POSITIONS
+    vel_y = num_y_hits % 2 == 0 and 1 or -1
+
+    num_x_states = NUM_X_POSITIONS * 2
+    pos_x = index % num_x_states + 1
+    if vel_x != 1:
+        pos_x = num_x_states - pos_x
+
+    num_y_states = NUM_Y_POSITIONS * 2
+    pos_y = index % num_y_states + 1
+    if vel_y != 1:
+        pos_y = num_y_states - pos_y
+
+    num_corner_hits = index // (NUM_X_POSITIONS * NUM_Y_POSITIONS)
+    num_hits = num_x_hits + num_y_hits - num_corner_hits
+    color = COLORS[num_hits % len(COLORS)]
+
+    return struct(
+        pos_x = pos_x,
+        pos_y = pos_y,
+        vel_x = vel_x,
+        vel_y = vel_y,
+        color = color,
+    )
+
+def get_frame(state):
+    return render.Padding(
+        pad = (state.pos_x, state.pos_y, 0, 0),
+        child = render.Stack(
+            children = [
+                render.Box(
+                    width = IMAGE_WIDTH,
+                    height = IMAGE_HEIGHT,
+                    color = state.color,
+                ),
+                render.Image(base64.decode(IMAGE_TRANSPARENT)),
+            ],
+        ),
     )
 
 
